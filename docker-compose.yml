@@ -1,31 +1,41 @@
-services:
-  mynginx:
-    # container_name: nginx-container
-    image: nginx
-    ports: [ "80" ]
-    volumes:
-      - datavol1:/v1
-      - datavol2:/v2
-    networks:
-      - mynetwork1
-
-  apache:
-    container_name: apache-container
-    image: php:8.0-apache
-    ports: [ "8090:80" ]
-    volumes: 
-      - datavol1:/v1
-      - datavol2:/v2
-    networks:
-      - mynetwork1
-
 volumes: 
-  datavol1:
-    name: datavol1
-  datavol2:
-    name: datavol2
-
+  mysql_data:
+    name: mysql_data
+  
 networks:
-  mynetwork1:
-    name: mynetwork1
+  mynet1:
+    name: mynet1
     driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.9.0/24
+
+services:
+  php:
+    build: .
+    container_name: php_app
+    ports: 
+      - "8080:80"
+    volumes:
+      - ./app:/var/www/html/
+    networks:
+      mynet1:
+        ipv4_address: 192.168.9.10  
+
+  mysql:
+    image: mariadb:10.4
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'userpass'
+      MYSQL_DATABASE: 'mydatabase'
+      MYSQL_ROOT_PASSWORD: 'rootpassword'
+    networks:
+      mynet1:
+        ipv4_address: 192.168.9.11 
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
